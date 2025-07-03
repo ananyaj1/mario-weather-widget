@@ -5,19 +5,62 @@ import './App.css'
 import { motion } from 'framer-motion';
 
 const App = () => {
-  const [count, setCount] = useState(0)
 
+  // state variables 
+  const [error, setError] = useState(null);
+  const [count, setCount] = useState(0);
+  const [location, setLocation] = useState({ latitude: null, longitude: null });
+  
   const texts = [
     'Today’s weather: light drizzle with mild, overcast skies.',
     'Wear a light rain jacket and waterproof shoes today.'
   ];
+
+  // External calls
+
+  useEffect(() => {
+    // get current location
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords; // Destructure directly
+          setLocation({ latitude, longitude }); // Update state
+          // Use the obtained location to fetch weather data
+          getWeather(latitude, longitude); // Pass lat/lon to getWeather
+        },
+        (error) => {
+          setError('Error getting geolocation: ' + error.message);
+        }
+      );
+    } else {
+      setError('Geolocation is not supported by this browser.');
+    }
+
+    // use current location to get current weather
+    const getWeather = async (latitude, longitude) => { // Accept lat/lon as arguments
+      try {
+        const params = new URLSearchParams({ lat: latitude, long: longitude });
+        const response = await fetch(`http://localhost:5001/current-weather?${params}`, {
+          credentials: 'include'
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        console.log(data);
+      } catch (e) {
+        setError(e.message);
+      }
+    };
+  }, []);
+
   return (
     <>
     <div className='card'>
       <div className='description-bubble'>
-        <p className='description-text'>
+        <div className='description-text'>
            <Typewrite texts={texts}/> 
-        </p>
+        </div>
       </div>
     </div>
     
